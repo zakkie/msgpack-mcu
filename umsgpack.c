@@ -120,7 +120,9 @@ static void encode_64bit_value(struct umsgpack_packer_buf *buf, uint64_t val) {
  */
 int umsgpack_pack_array(struct umsgpack_packer_buf *buf, int length) {
     int bytes;
-    bytes = length > 0x0f ? 3: 1;
+    bytes = length <= 0x0f ? 1:
+	    length <= 0xFFFF ? 3:
+	    length <= 0xFFFFFFFF ? 5 : 0;
 
     if (buf->pos + bytes > buf->length)
         return 0;
@@ -133,6 +135,11 @@ int umsgpack_pack_array(struct umsgpack_packer_buf *buf, int length) {
     case 3:
         buf->data[buf->pos++] = 0xdc;
         encode_16bit_value(buf, (uint16_t)length);
+        break;
+
+    case 5:
+        buf->data[buf->pos++] = 0xdd;
+        encode_32bit_value(buf, length);
         break;
 
     default:
