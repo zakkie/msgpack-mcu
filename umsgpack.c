@@ -427,7 +427,8 @@ int umsgpack_pack_str(struct umsgpack_packer_buf *buf, const char *s, uint32_t l
     int bytes;
     bytes = length <= 31 ? 1:
             length <= 0xFF ? 2:
-            length <= 0xFFFF ? 3: 0;
+            length <= 0xFFFF ? 3:
+	    length <= 0xFFFFFFFF ? 5 : 0;
 
     if (buf->pos + bytes + length > buf->length)
         return 0;
@@ -445,6 +446,11 @@ int umsgpack_pack_str(struct umsgpack_packer_buf *buf, const char *s, uint32_t l
     case 3:
         buf->data[buf->pos++] = 0x0da;
         encode_16bit_value(buf, (uint16_t)length);
+        break;
+
+    case 5:
+        buf->data[buf->pos++] = 0x0db;
+        encode_32bit_value(buf, length);
         break;
 
     default:
